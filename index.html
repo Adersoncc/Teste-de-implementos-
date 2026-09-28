@@ -242,7 +242,7 @@
         </div>
     </div>
 
-    <!-- MODAL: CADASTRAR CAMPANHA (NORMAIS E BACKSEAT) -->
+    <!-- MODAL: CADASTRAR / EDITAR CAMPANHA (NORMAIS E BACKSEAT) -->
     <div id="modal-campanha" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden backdrop-blur-sm p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden transform transition-all">
             <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
@@ -250,8 +250,11 @@
                 <button onclick="fecharModalCampanha()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <form id="form-campanha" onsubmit="salvarCampanha(event)" class="p-6 space-y-4">
-                <!-- Tipo oculto para o JS saber o que está salvando -->
+                
+                <!-- AQUI ESTÃO OS DOIS CAMPOS ESCONDIDOS IMPORTANTES PARA A EDIÇÃO -->
+                <input type="hidden" id="campanha-id" value=""> 
                 <input type="hidden" id="campanha-tipo" value="normal">
+                
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-1">Nome da Campanha *</label>
                     <input type="text" id="campanha-nome" required placeholder="Ex: Campanha Aniversário da Cidade" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
