@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control-Buss - Gestão de Frota</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+
+    <!-- HEADER -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg flex items-center justify-center shadow-md">
+                    <i class="fa-solid fa-bus text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-gray-900 leading-none">Control-Buss</h1>
+                    <span class="inline-flex items-center text-xs font-medium text-emerald-600 mt-1">
+                        <span class="w-2 h-2 mr-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Firebase Conectado
+                    </span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-gray-600">Olá, <strong class="text-gray-900">Operador</strong></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- DASHBOARD METRICS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Frota Total</p>
+                    <h3 id="metric-total" class="text-2xl font-bold text-gray-900 mt-1">0</h3>
+                </div>
+                <div class="bg-blue-50 text-blue-600 p-3 rounded-lg"><i class="fa-solid fa-bus text-lg"></i></div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Operando</p>
+                    <h3 id="metric-operando" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+                </div>
+                <div class="bg-emerald-50 text-emerald-600 p-3 rounded-lg"><i class="fa-solid fa-circle-check text-lg"></i></div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Em Manutenção / Parados</p>
+                    <h3 id="metric-parados" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
+                </div>
+                <div class="bg-amber-50 text-amber-600 p-3 rounded-lg"><i class="fa-solid fa-triangle-exclamation text-lg"></i></div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Sem Campanha Nenhuma</p>
+                    <h3 id="metric-sem-campanha" class="text-2xl font-bold text-indigo-600 mt-1">0</h3>
+                </div>
+                <div class="bg-indigo-50 text-indigo-600 p-3 rounded-lg"><i class="fa-solid fa-bullhorn text-lg"></i></div>
+            </div>
+        </div>
+
+        <!-- ACTION BUTTONS BAR -->
+        <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <h2 class="text-lg font-semibold text-gray-800"><i class="fa-solid fa-sliders text-blue-600 mr-2"></i>Ações Rápidas</h2>
+            <div class="flex flex-wrap items-center gap-3">
+                <button onclick="abrirModalOnibus()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition shadow-sm flex items-center space-x-2">
+                    <i class="fa-solid fa-plus"></i><span>Cadastrar Novo Ônibus</span>
+                </button>
+                <button onclick="abrirModalCampanha('normal')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition shadow-sm flex items-center space-x-2">
+                    <i class="fa-solid fa-bullhorn"></i><span>Cadastrar Nova Campanha</span>
+                </button>
+                <!-- NOVO BOTÃO BACKSEAT -->
+                <button onclick="abrirModalCampanha('backseat')" class="bg-purple-600 hover:bg-purple-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition shadow-sm flex items-center space-x-2">
+                    <i class="fa-solid fa-chair"></i><span>Cadastrar Campanha Backseat</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION: FROTA DE ÔNIBUS -->
+        <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-900">Gestão da Frota de Ônibus</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">Consulte o status, prefixo, linha, garagem e campanhas dos veículos</p>
+                </div>
+                <div class="relative w-full sm:w-64">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400"><i class="fa-solid fa-search"></i></span>
+                    <input type="text" id="filtro-onibus" oninput="filtrarOnibus()" placeholder="Filtrar ônibus..." class="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <div class="table-scroll-container">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wider border-b border-gray-200">
+                            <th class="py-3 px-6">Prefixo</th>
+                            <th class="py-3 px-6">Garagem</th>
+                            <th class="py-3 px-6">Nome da Linha</th>
+                            <th class="py-3 px-6">Status Operacional</th>
+                            <th class="py-3 px-6">Campanha (Tradicional)</th>
+                            <th class="py-3 px-6">Campanha (Backseat)</th>
+                            <th class="py-3 px-6 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-onibus" class="divide-y divide-gray-200 text-sm">
+                        <tr><td colspan="7" class="py-6 text-center text-gray-500">Carregando frota do Firebase...</td></tr>
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: CAMPANHAS NORMAIS -->
+        <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-900">Campanhas Registradas (Tradicionais)</h2>
+                <p class="text-sm text-gray-500 mt-0.5">Acompanhe as campanhas tradicionais ativas e agendadas</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wider border-b border-gray-200">
+                            <th class="py-3 px-6">Campanha</th>
+                            <th class="py-3 px-6">Qtd. Veículos</th>
+                            <th class="py-3 px-6">Início</th>
+                            <th class="py-3 px-6">Vencimento</th>
+                            <th class="py-3 px-6">Status</th>
+                            <th class="py-3 px-6 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-campanhas-normal" class="divide-y divide-gray-200 text-sm">
+                        <tr><td colspan="6" class="py-6 text-center text-gray-500">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION: CAMPANHAS BACKSEAT -->
+        <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-900 text-purple-800">Campanhas Backseat Registradas</h2>
+                <p class="text-sm text-gray-500 mt-0.5">Acompanhe as campanhas internas (Backseat) ativas e agendadas</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wider border-b border-gray-200">
+                            <th class="py-3 px-6">Campanha Backseat</th>
+                            <th class="py-3 px-6">Qtd. Veículos</th>
+                            <th class="py-3 px-6">Início</th>
+                            <th class="py-3 px-6">Vencimento</th>
+                            <th class="py-3 px-6">Status</th>
+                            <th class="py-3 px-6 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-campanhas-backseat" class="divide-y divide-gray-200 text-sm">
+                        <tr><td colspan="6" class="py-6 text-center text-gray-500">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION: CAMPANHAS VENCIDAS -->
+        <section class="bg-gray-50 rounded-xl border border-gray-200 shadow-sm overflow-hidden opacity-90">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-rose-700"><i class="fa-solid fa-clock-rotate-left mr-2"></i>Campanhas Vencidas (Histórico)</h2>
+                <p class="text-sm text-gray-500 mt-0.5">Campanhas encerradas. Clique para ver os veículos que participaram para auxiliar na remoção.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-600 uppercase text-xs tracking-wider border-b border-gray-200">
+                            <th class="py-3 px-6">Campanha Encerrada</th>
+                            <th class="py-3 px-6">Qtd. Veículos</th>
+                            <th class="py-3 px-6">Início</th>
+                            <th class="py-3 px-6">Vencimento</th>
+                            <th class="py-3 px-6">Status</th>
+                            <th class="py-3 px-6 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-campanhas-vencidas" class="divide-y divide-gray-200 text-sm bg-white">
+                        <tr><td colspan="6" class="py-6 text-center text-gray-500">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-gray-200 py-4 text-center text-xs text-gray-500 mt-auto">
+        Control-Buss &copy; 2026 - Sistema de Gestão de Frotas
+    </footer>
+
+    <!-- MODAL: CADASTRAR / EDITAR ÔNIBUS -->
+    <div id="modal-onibus" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden transform transition-all">
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                <h3 id="titulo-modal-onibus" class="text-base font-bold text-gray-900">Cadastrar Novo Ônibus</h3>
+                <button onclick="fecharModalOnibus()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="form-onibus" onsubmit="salvarOnibus(event)" class="p-6 space-y-4">
+                <input type="hidden" id="onibus-id">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-1">Prefixo do Ônibus *</label>
+                    <input type="text" id="onibus-prefixo" required placeholder="Ex: 4001, 2305..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-1">Garagem *</label>
+                    <select id="onibus-garagem" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="" disabled selected>Selecione a garagem</option>
+                        <option value="Inovare">Inovare</option>
+                        <option value="Prime">Prime</option>
+                        <option value="GLV">GLV</option>
+                        <option value="Ratrans">Ratrans</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-1">Status Operacional *</label>
+                    <select id="onibus-status" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="Operando">Operando</option>
+                        <option value="Em Manutenção">Em Manutenção</option>
+                        <option value="Parado">Parado</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-1">Nome da Linha / Rota <span class="text-gray-400 font-normal">(Opcional)</span></label>
+                    <input type="text" id="onibus-linha" placeholder="Ex: Cohatrac / Aeroporto" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <button type="button" onclick="fecharModalOnibus()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm">Salvar Ônibus</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CADASTRAR CAMPANHA (NORMAIS E BACKSEAT) -->
+    <div id="modal-campanha" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden transform transition-all">
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                <h3 id="titulo-modal-campanha" class="text-base font-bold text-gray-900">Cadastrar Nova Campanha</h3>
+                <button onclick="fecharModalCampanha()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="form-campanha" onsubmit="salvarCampanha(event)" class="p-6 space-y-4">
+                <!-- Tipo oculto para o JS saber o que está salvando -->
+                <input type="hidden" id="campanha-tipo" value="normal">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-1">Nome da Campanha *</label>
+                    <input type="text" id="campanha-nome" required placeholder="Ex: Campanha Aniversário da Cidade" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-1">Data Inicial *</label>
+                        <input type="date" id="campanha-inicio" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-1">Data Final *</label>
+                        <input type="date" id="campanha-fim" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600">Selecione os Ônibus (Múltiplos) *</label>
+                        <button type="button" onclick="selecionarTodosOnibus(true)" class="text-xs text-indigo-600 hover:underline">Selecionar Todos</button>
+                    </div>
+                    <div id="lista-checkbox-onibus" class="max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-2 space-y-1 bg-gray-50">
+                        <!-- Preenchido dinamicamente via JS -->
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <button type="button" onclick="fecharModalCampanha()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition shadow-sm">Salvar Campanha</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: DETALHES DA CAMPANHA -->
+    <div id="modal-detalhes-campanha" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden transform transition-all">
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                <h3 id="modal-detalhes-titulo" class="text-base font-bold text-gray-900">Detalhes da Campanha</h3>
+                <button onclick="fecharModalDetalhesCampanha()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4 text-sm bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 block">Início</span>
+                        <span id="modal-detalhes-inicio" class="font-medium text-gray-800">-</span>
+                    </div>
+                    <div>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 block">Vencimento</span>
+                        <span id="modal-detalhes-vencimento" class="font-medium text-gray-800">-</span>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">Veículos Alocados nesta Campanha:</h4>
+                    <div class="max-h-56 overflow-y-auto border border-gray-200 rounded-lg">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs sticky top-0 border-b border-gray-200">
+                                <tr>
+                                    <th class="py-2 px-3">Prefixo</th>
+                                    <th class="py-2 px-3">Garagem</th>
+                                    <th class="py-2 px-3">Linha</th>
+                                    <th class="py-2 px-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-detalhes-onibus" class="divide-y divide-gray-100">
+                                <!-- Preenchido via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-end">
+                <button onclick="fecharModalDetalhesCampanha()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT JS -->
+    <script type="module" src="script.js"></script>
+
+</body>
+</html>
