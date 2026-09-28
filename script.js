@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// CONFIGURAÇÃO DO FIREBASE
+// CONFIGURAÇÃO DO FIREBASE (Suas credenciais mantidas)
 const firebaseConfig = {
   apiKey: "AIzaSyC63Q1eBXVFz5CkLxxWMAfDN6uxWwy_oU8",
   authDomain: "controle-de-campanhas-55ae2.firebaseapp.com",
@@ -18,7 +18,6 @@ const db = getFirestore(app);
 let cacheOnibus = [];
 let cacheCampanhas = [];
 
-// Função que desvincula as campanhas vencidas dos ônibus na tabela principal
 async function verificarCampanhasVencidas() {
     const hoje = new Date().toISOString().split('T')[0];
     const campanhasVencidas = cacheCampanhas.filter(c => c.fim < hoje);
@@ -31,7 +30,6 @@ async function verificarCampanhasVencidas() {
         let alterado = false;
         let updates = {};
 
-        // Limpa campanha Normal/Tradicional se vencida
         if (o.campanha) {
             const campNormal = campanhasVencidas.find(c => c.nome === o.campanha && (c.tipo === 'normal' || !c.tipo));
             if (campNormal) {
@@ -41,7 +39,6 @@ async function verificarCampanhasVencidas() {
             }
         }
 
-        // Limpa campanha Backseat se vencida
         if (o.campanha_backseat) {
             const campBackseat = campanhasVencidas.find(c => c.nome === o.campanha_backseat && c.tipo === 'backseat');
             if (campBackseat) {
@@ -60,9 +57,9 @@ async function verificarCampanhasVencidas() {
     if (promessasAtualizacao.length > 0) {
         try {
             await Promise.all(promessasAtualizacao);
-            console.log("Veículos foram desvinculados de campanhas vencidas.");
+            console.log("Veículos desvinculados de campanhas vencidas.");
         } catch (error) {
-            console.error("Erro ao limpar campanhas vencidas:", error);
+            console.error("Erro ao limpar campanhas:", error);
         }
     }
 }
@@ -92,7 +89,6 @@ function atualizarMetricas() {
     const operando = cacheOnibus.filter(o => o.status === 'Operando').length;
     const parados = cacheOnibus.filter(o => o.status === 'Parado' || o.status === 'Em Manutenção').length;
     
-    // Sem nenhuma campanha (Nem normal e nem backseat)
     const semCampanha = cacheOnibus.filter(o => 
         (!o.campanha || o.campanha.trim() === '') && 
         (!o.campanha_backseat || o.campanha_backseat.trim() === '')
@@ -143,7 +139,6 @@ window.renderizarTabelaOnibus = function(lista) {
 window.renderizarTabelaCampanhas = function() {
     const hoje = new Date().toISOString().split('T')[0];
 
-    // Separa as campanhas nas 3 categorias requeridas
     const normais = cacheCampanhas.filter(c => c.fim >= hoje && (c.tipo === 'normal' || !c.tipo));
     const backseats = cacheCampanhas.filter(c => c.fim >= hoje && c.tipo === 'backseat');
     const vencidas = cacheCampanhas.filter(c => c.fim < hoje);
@@ -170,7 +165,6 @@ function gerarLinhasHTML(lista, tbodyId, mensagemVazio) {
         else if (hoje > c.fim) statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-100 text-rose-800">Vencida</span>`;
         else statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">Ativa</span>`;
 
-        // Agora lemos direto da array de veículos da própria campanha salva no firebase (Histórico perfeito)
         const qtdVeiculos = c.veiculos ? c.veiculos.length : cacheOnibus.filter(o => o.campanha === c.nome || o.campanha_backseat === c.nome).length;
         
         const icone = c.tipo === 'backseat' ? 'fa-chair' : 'fa-bullhorn';
@@ -188,7 +182,8 @@ function gerarLinhasHTML(lista, tbodyId, mensagemVazio) {
                 <td class="py-3 px-6 text-gray-700">${formatarData(c.inicio)}</td>
                 <td class="py-3 px-6 text-gray-700">${formatarData(c.fim)}</td>
                 <td class="py-3 px-6">${statusBadge}</td>
-                <td class="py-3 px-6 text-center">
+                <td class="py-3 px-6 text-center space-x-2">
+                    <button onclick="editarCampanha('${c.id}')" title="Editar Campanha" class="text-blue-600 hover:text-blue-800 p-1"><i class="fa-solid fa-pen-to-square"></i></button>
                     <button onclick="deletarCampanha('${c.id}', '${c.nome}', '${c.tipo || 'normal'}')" title="Excluir Definitivamente" class="text-rose-600 hover:text-rose-800 p-1"><i class="fa-solid fa-trash"></i></button>
                 </td>
             </tr>
@@ -206,12 +201,9 @@ window.abrirDetalhesCampanha = function(idCampanha) {
 
     let onibusDaCampanha = [];
 
-    // Se existe a memória dos veículos no Firebase (Nova Versão) usamos ela.
-    // Isso garante que campanhas vencidas mostrem os veículos, mesmo se o veículo já estiver "Sem Campanha".
     if (campanha.veiculos && campanha.veiculos.length > 0) {
         onibusDaCampanha = cacheOnibus.filter(o => campanha.veiculos.includes(o.prefixo));
     } else {
-        // Fallback para campanhas antigas (antes dessa atualização)
         onibusDaCampanha = cacheOnibus.filter(o => o.campanha === campanha.nome || o.campanha_backseat === campanha.nome);
     }
 
@@ -302,7 +294,6 @@ window.salvarOnibus = async function(event) {
     try {
         if (id) {
             const objAntigo = cacheOnibus.find(o => o.id === id);
-            // Preservar campanhas em edições de ônibus
             if (objAntigo && objAntigo.campanha) dadosOnibus.campanha = objAntigo.campanha;
             if (objAntigo && objAntigo.campanha_backseat) dadosOnibus.campanha_backseat = objAntigo.campanha_backseat;
 
@@ -337,9 +328,9 @@ window.deletarOnibus = async function(id) {
 // MODAL CAMPANHA (SERVE PARA NORMAL E BACKSEAT)
 window.abrirModalCampanha = function(tipo = 'normal') {
     document.getElementById("form-campanha").reset();
+    document.getElementById("campanha-id").value = ""; // Limpa ID para criar nova
     document.getElementById("campanha-tipo").value = tipo;
     
-    // Troca o título dependendo do botão apertado
     const tituloEl = document.getElementById("titulo-modal-campanha");
     if (tipo === 'backseat') {
         tituloEl.innerText = "Cadastrar Nova Campanha Backseat";
@@ -349,7 +340,7 @@ window.abrirModalCampanha = function(tipo = 'normal') {
 
     const container = document.getElementById("lista-checkbox-onibus");
     if (cacheOnibus.length === 0) {
-        container.innerHTML = `<p class="text-xs text-gray-500 italic p-2">Nenhum ônibus cadastrado para alocar campanha.</p>`;
+        container.innerHTML = `<p class="text-xs text-gray-500 italic p-2">Nenhum ônibus cadastrado.</p>`;
     } else {
         container.innerHTML = cacheOnibus.map(o => `
             <label class="flex items-center space-x-2 p-1 hover:bg-white rounded cursor-pointer">
@@ -357,6 +348,40 @@ window.abrirModalCampanha = function(tipo = 'normal') {
                 <span class="text-xs font-medium text-gray-800">Prefixo: ${o.prefixo} ${o.linha ? '(' + o.linha + ')' : ''}</span>
             </label>
         `).join('');
+    }
+    document.getElementById("modal-campanha").classList.remove("hidden");
+};
+
+// FUNÇÃO NOVA: ABRIR CAMPANHA EXISTENTE PARA EDIÇÃO
+window.editarCampanha = function(id) {
+    const campanha = cacheCampanhas.find(c => c.id === id);
+    if (!campanha) return;
+
+    document.getElementById("form-campanha").reset();
+    document.getElementById("campanha-id").value = campanha.id;
+    document.getElementById("campanha-tipo").value = campanha.tipo || 'normal';
+    document.getElementById("campanha-nome").value = campanha.nome;
+    document.getElementById("campanha-inicio").value = campanha.inicio;
+    document.getElementById("campanha-fim").value = campanha.fim;
+
+    const tituloEl = document.getElementById("titulo-modal-campanha");
+    tituloEl.innerText = (campanha.tipo === 'backseat') ? "Editar Campanha Backseat" : "Editar Campanha";
+
+    const container = document.getElementById("lista-checkbox-onibus");
+    const veiculosMarcados = campanha.veiculos || [];
+    
+    if (cacheOnibus.length === 0) {
+        container.innerHTML = `<p class="text-xs text-gray-500 italic p-2">Nenhum ônibus cadastrado.</p>`;
+    } else {
+        container.innerHTML = cacheOnibus.map(o => {
+            const checked = veiculosMarcados.includes(o.prefixo) ? "checked" : "";
+            return `
+            <label class="flex items-center space-x-2 p-1 hover:bg-white rounded cursor-pointer">
+                <input type="checkbox" name="onibus-checkbox" value="${o.prefixo}" ${checked} class="rounded text-indigo-600 focus:ring-indigo-500">
+                <span class="text-xs font-medium text-gray-800">Prefixo: ${o.prefixo} ${o.linha ? '(' + o.linha + ')' : ''}</span>
+            </label>
+            `;
+        }).join('');
     }
     document.getElementById("modal-campanha").classList.remove("hidden");
 };
@@ -372,10 +397,11 @@ window.selecionarTodosOnibus = function(marcar) {
 
 window.salvarCampanha = async function(event) {
     event.preventDefault();
+    const id = document.getElementById("campanha-id").value; // Verifica se tem ID (Edição)
     const nome = document.getElementById("campanha-nome").value.trim();
     const inicio = document.getElementById("campanha-inicio").value;
     const fim = document.getElementById("campanha-fim").value;
-    const tipo = document.getElementById("campanha-tipo").value; // 'normal' ou 'backseat'
+    const tipo = document.getElementById("campanha-tipo").value;
 
     const checkboxes = document.querySelectorAll('input[name="onibus-checkbox"]:checked');
     const prefixosSelecionados = Array.from(checkboxes).map(cb => cb.value);
@@ -386,23 +412,51 @@ window.salvarCampanha = async function(event) {
     }
 
     try {
-        // Agora gravamos "veiculos" e "tipo" na própria campanha para ter histórico vitalício!
-        await addDoc(collection(db, "campanhas"), { 
-            nome, 
-            inicio, 
-            fim, 
-            tipo, 
-            veiculos: prefixosSelecionados 
-        });
+        let nomeAntigo = null;
 
-        // Atualiza a visualização nos ônibus do DB
+        if (id) {
+            // EDIÇÃO DE CAMPANHA EXISTENTE
+            const campAntiga = cacheCampanhas.find(c => c.id === id);
+            if (campAntiga) nomeAntigo = campAntiga.nome;
+
+            await updateDoc(doc(db, "campanhas", id), { 
+                nome, inicio, fim, tipo, veiculos: prefixosSelecionados 
+            });
+        } else {
+            // CRIAÇÃO DE NOVA CAMPANHA
+            await addDoc(collection(db, "campanhas"), { 
+                nome, inicio, fim, tipo, veiculos: prefixosSelecionados 
+            });
+        }
+
+        // ATUALIZA OS ÔNIBUS NO BANCO
         for (let o of cacheOnibus) {
+            let updates = {};
+            let atualizou = false;
+
+            // Passo 1: Se era dessa campanha e foi desmarcado, limpa.
+            if (nomeAntigo) {
+                if (tipo === 'backseat' && o.campanha_backseat === nomeAntigo) {
+                    updates.campanha_backseat = "";
+                    atualizou = true;
+                } else if (tipo === 'normal' && o.campanha === nomeAntigo) {
+                    updates.campanha = "";
+                    atualizou = true;
+                }
+            }
+
+            // Passo 2: Se foi marcado na lista atual, aplica o nome (mesmo se for edição de nome).
             if (prefixosSelecionados.includes(o.prefixo)) {
                 if (tipo === 'backseat') {
-                    await updateDoc(doc(db, "onibus", o.id), { campanha_backseat: nome });
+                    updates.campanha_backseat = nome;
                 } else {
-                    await updateDoc(doc(db, "onibus", o.id), { campanha: nome });
+                    updates.campanha = nome;
                 }
+                atualizou = true;
+            }
+
+            if (atualizou) {
+                await updateDoc(doc(db, "onibus", o.id), updates);
             }
         }
 
@@ -416,7 +470,6 @@ window.salvarCampanha = async function(event) {
 window.deletarCampanha = async function(id, nomeCampanha, tipo) {
     if (confirm(`Deseja realmente excluir a campanha "${nomeCampanha}" DEFINITIVAMENTE?`)) {
         try {
-            // Remove a campanha dos ônibus ativos se ela ainda estiver constando
             for (let o of cacheOnibus) {
                 if (tipo === 'backseat' && o.campanha_backseat === nomeCampanha) {
                     await updateDoc(doc(db, "onibus", o.id), { campanha_backseat: "" });
